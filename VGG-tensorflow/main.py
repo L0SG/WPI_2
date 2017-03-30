@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 from vgg import vgg11
 import cifar100_utils
-
+print None
 (train_x, train_y), (test_x, test_y) = cifar100_utils.load_data()
 
 # if trained the model before, load the weights
