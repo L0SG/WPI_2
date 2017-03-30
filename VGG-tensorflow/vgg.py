@@ -21,6 +21,7 @@ class vgg11:
         self.model = self.build()
 
 
+    # anna 
     def build(self):
         """
         build the model
