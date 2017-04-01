@@ -1,7 +1,5 @@
-import numpy as np
-from keras.datasets import cifar10
+
 from keras.datasets import cifar100
-from keras.datasets import mnist
 from keras.utils import to_categorical
 
 def load_data(name=None):
