@@ -17,6 +17,7 @@ class vgg11:
             self.weights = weights
             print ("VGG-11 pre-computed weights loaded")
         else :
+            '''
             self.weights = {
                 'wc1': tf.Variable(tf.truncated_normal([3, 3, 3, 64], stddev=0.1)),
                 'wc2': tf.Variable(tf.truncated_normal([3, 3, 64, 128], stddev=0.1)),
@@ -43,6 +44,7 @@ class vgg11:
                 'bd3': tf.Variable(tf.random_normal([200], stddev=0.1)),
                 'bd4': tf.Variable(tf.random_normal([100], stddev=0.1))
             }
+            '''
         if sess is not None:
             self.sess = sess
         # build the model
@@ -59,83 +61,58 @@ class vgg11:
         self.x = tf.placeholder("float", [None, 32, 32, 3])
         self.y = tf.placeholder("float", [None, 100])
 
-        model=self.conv(self.x, self.weights)
-        print ("CNN READY")
-        return model
-
-    def conv(self, _input, _w):
         # CONV LAYER 1
-        with tf.name_scope("conv1"):
-            _conv1 = tf.nn.conv2d(_input, _w['wc1'], strides=[1, 1, 1, 1], padding='SAME')
-            _mean, _var = tf.nn.moments(_conv1, [0, 1, 2])
-    #        _conv1 = tf.nn.batch_normalization(_conv1, _mean, _var, 0, 1, 0.0001)
-            _conv1_2 = tf.nn.relu(tf.nn.bias_add(_conv1, _w['bc1']))
-            _pool1 = tf.nn.max_pool(_conv1_2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+        conv1=self.conv_layer(self.x, 3, 64, "conv1", isPooling=True)
         # CONV LAYER 2
-        with tf.name_scope("conv2"):
-            _conv2 = tf.nn.conv2d(_pool1, _w['wc2'], strides=[1, 1, 1, 1], padding='SAME')
-            _mean, _var = tf.nn.moments(_conv2, [0, 1, 2])
-    #        _conv2 = tf.nn.batch_normalization(_conv2, _mean, _var, 0, 1, 0.0001)
-            _conv2_2 = tf.nn.relu(tf.nn.bias_add(_conv2, _w['bc2']))
-            _pool2 = tf.nn.max_pool(_conv2_2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        # CONV LAYER 3&4
-        with tf.name_scope("conv3_4"):
-            _conv3 = tf.nn.conv2d(_pool2, _w['wc3'], strides=[1, 1, 1, 1], padding='SAME')
-            _mean, _var = tf.nn.moments(_conv3, [0, 1, 2])
-    #        _conv3 = tf.nn.batch_normalization(_conv3, _mean, _var, 0, 1, 0.0001)
-            _conv3_2 = tf.nn.relu(tf.nn.bias_add(_conv3, _w['bc3']))
-            _conv4 = tf.nn.conv2d(_conv3_2, _w['wc4'], strides=[1, 1, 1, 1], padding='SAME')
-            _mean, _var = tf.nn.moments(_conv4, [0, 1, 2])
-    #        _conv4 = tf.nn.batch_normalization(_conv4, _mean, _var, 0, 1, 0.0001)
-            _conv4 = tf.nn.relu(tf.nn.bias_add(_conv4, _w['bc4']))
-            _pool4 = tf.nn.max_pool(_conv4, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        # CONV LAYER 5&6
-        with tf.name_scope("conv5_6"):
-            _conv5 = tf.nn.conv2d(_pool4, _w['wc5'], strides=[1, 1, 1, 1], padding='VALID')
-            _mean, _var = tf.nn.moments(_conv5, [0, 1, 2])
-    #        _conv5 = tf.nn.batch_normalization(_conv5, _mean, _var, 0, 1, 0.0001)
-            _conv5 = tf.nn.relu(tf.nn.bias_add(_conv5, _w['bc5']))
-            _conv6 = tf.nn.conv2d(_conv5, _w['wc6'], strides=[1, 1, 1, 1], padding='SAME')
-            _mean, _var = tf.nn.moments(_conv6, [0, 1, 2])
-    #        _conv6 = tf.nn.batch_normalization(_conv6, _mean, _var, 0, 1, 0.0001)
-            _conv6 = tf.nn.relu(tf.nn.bias_add(_conv6, _w['bc6']))
-            _pool6 = tf.nn.max_pool(_conv6, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        # CONV LAYER 7&8
-        with tf.name_scope("conv7_8"):
-            _conv7 = tf.nn.conv2d(_pool6, _w['wc7'], strides=[1, 1, 1, 1], padding='SAME')
-            _mean, _var = tf.nn.moments(_conv7, [0, 1, 2])
-    #        _conv7 = tf.nn.batch_normalization(_conv7, _mean, _var, 0, 1, 0.0001)
-            _conv7 = tf.nn.relu(tf.nn.bias_add(_conv7, _w['bc7']))
-            _conv8 = tf.nn.conv2d(_conv7, _w['wc8'], strides=[1, 1, 1, 1], padding='SAME')
-            _mean, _var = tf.nn.moments(_conv8, [0, 1, 2])
-    #        _conv8 = tf.nn.batch_normalization(_conv8, _mean, _var, 0, 1, 0.0001)
-            _conv8 = tf.nn.relu(tf.nn.bias_add(_conv8, _w['bc8']))
-            _pool8 = tf.nn.max_pool(_conv8, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-        with tf.name_scope("dense"):
-            # VECTORIZE
-            _dense1 = tf.reshape(_pool8, [-1, _w['wd1'].get_shape().as_list()[0]])  # why not [-1,none]
-            # FULLY CONNECTED LAYER 1
-            _fc1 = tf.nn.relu(tf.add(tf.matmul(_dense1, _w['wd1']), _w['bd1']))
-            _fc_dr1 = tf.nn.dropout(_fc1, 0.5)
-            # FULLY CONNECTED LAYER 2
-            _fc2 = tf.nn.relu(tf.add(tf.matmul(_fc_dr1, _w['wd2']), _w['bd2']))
-            _fc_dr2 = tf.nn.dropout(_fc2, 0.5)
-            # FULLY CONNECTED LAYER 3
-            _fc3 = tf.add(tf.matmul(_fc_dr2, _w['wd3']), _w['bd3'])
-        # SOFT-MAX
-        _out = tf.nn.softmax(tf.add(tf.matmul(_fc3, _w['wd4']), _w['bd4']))
+        conv2=self.conv_layer(conv1, 64, 128, "conv2", isPooling=True)
+        # CONV LAYER 3 & 4
+        conv3=self.conv_layer(conv2, 128, 256, "conv3", isPooling=False)
+        conv4=self.conv_layer(conv3, 256, 256, "conv4", isPooling=True)
+        # CONV LAYER 5 & 6
+        conv5=self.conv_layer(conv4, 256, 512, "conv5", isPooling=False)
+        conv6=self.conv_layer(conv5, 512, 512, "conv6", isPooling=True)
+        # CONV LAYER 7 & 8
+        conv7=self.conv_layer(conv6, 512, 512, "conv7", isPooling=False)
+        conv8=self.conv_layer(conv7, 512, 512, "conv8", isPooling=True)
+        # VECTORIZE
+        print(conv8.get_shape())
+        flat = tf.contrib.layers.flatten(conv8)
+        print(flat.get_shape())
+        # FULLY CONNECTED LAYER 1
+        fc1=self.fc_layer(flat, 512, 512, "dense1", isDropout=True)
+        # FULLY CONNECTED LAYER 2
+        fc2=self.fc_layer(fc1, 512, 200, "dense2", isDropout=True)
+        # FULLY CONNECTED LAYER 3
+        fc3=self.fc_layer(fc2, 200, 100, "dense3", isDropout=False)
         # RETURN
-        '''
-        out = {'input': _input, 'conv1': _conv1, 'pool1': _pool1,
-               'conv2': _conv2, 'pool2': _pool2,
-               'conv3': _conv3, 'conv4': _conv4, 'pool4': _pool4,
-               'conv5': _conv5, 'conv6': _conv6, 'pool6': _pool6,
-               'conv7': _conv7, 'conv8': _conv8, 'pool8': _pool8,
-               'dense1': _dense1, 'fc1': _fc1, 'fc_dr1': _fc_dr1, 'fc2': _fc2, 'fc_dr2': _fc_dr2,
-               'fc3': _fc3,      'out': _out
-               }
-        '''
-        return _out
+        print ("CNN READY")
+        return fc3
+
+    def conv_layer(self, input, channels_in, channels_out, name, isPooling=False):
+        with tf.name_scope(name):
+            w = tf.Variable(tf.zeros([3, 3, channels_in, channels_out]), dtype=tf.float32,  name="w")
+            b = tf.Variable(tf.zeros([channels_out]), dtype=tf.float32,  name="b")
+            conv = tf.nn.conv2d(input, w, strides=[1, 1, 1, 1], padding="SAME", name="conv") + b
+            activ = tf.nn.relu(conv, name="activ")
+            if(not isPooling) :
+                return activ
+            else :
+                pool = tf.nn.max_pool(activ, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME", name="pool")
+                return pool
+
+    def fc_layer(self, input, channels_in, channels_out, name, isDropout=False):
+        with tf.name_scope(name):
+            w = tf.Variable(tf.zeros([channels_in, channels_out]), dtype=tf.float32, name="w")
+            b = tf.Variable(tf.zeros([channels_out]), dtype=tf.float32,  name="b")
+            print(input.get_shape())
+            print(w.get_shape())
+            activ = tf.nn.relu(tf.matmul(input, w) + b, name="activ")
+            if(not isDropout) :
+                return activ
+            else :
+                drop = tf.nn.dropout(activ, 0.5)
+                return drop
+
 
     def train(self, images, labels, epochs, val_split, save_weights):
         """
@@ -153,9 +130,9 @@ class vgg11:
         train_images, test_images=np.split(images, [train_data_size])
         train_labels, test_labels=np.split(labels, [train_data_size])
 
-        x=self.x
-        y=self.y
-        sess=self.sess
+        x = self.x
+        y = self.y
+        sess = self.sess
 
         batch_size = 25
         total_batch = (int)(train_data_size/batch_size)
@@ -164,15 +141,17 @@ class vgg11:
 
         # impelement here
         pred = self.model
-        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=pred))
-        optm = tf.train.GradientDescentOptimizer(1e-4).minimize(cross_entropy)
-        correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        with tf.name_scope("loss"):
+            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=pred), name="loss")
+        optm = tf.train.GradientDescentOptimizer(1e-4).minimize(loss)
+        with tf.name_scope("accuracy"):
+            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="accuracy")
         init = tf.global_variables_initializer()
 
         saver = tf.train.Saver(max_to_keep=3)
 
-        writer = tf.summary.FileWriter("/home/user/JINGYU_KO/DEEPEST/WPI/VGG11/tmp/vgg/1")
+        writer = tf.summary.FileWriter("./tmp/1")
         writer.add_graph(sess.graph)
 
         print("Graph is ready")
@@ -185,16 +164,16 @@ class vgg11:
                 batch_xs = train_images[i * batch_size:(i + 1) * batch_size]
                 batch_ys = train_labels[i * batch_size:(i + 1) * batch_size]
                 sess.run(optm, feed_dict={x: batch_xs, y: batch_ys})
-                avg_cost += sess.run(cross_entropy, feed_dict={x: batch_xs, y: batch_ys}) / total_batch
+                avg_cost += sess.run(loss, feed_dict={x: batch_xs, y: batch_ys}) / total_batch
 
                 # Display logs per epoch step
             if epoch % display_step == 0:
                 print("time per epoch : %s" % (time.time() - start_time),
                       "epoch:", '%04d' % (epoch), "cost_train=", "{:.9f}".format(avg_cost))
                 print("validation accuracy : %s" , accuracy.eval(feed_dict={x: test_images, y: test_labels}),
-                      "validation loss : %s", sess.run(cross_entropy, feed_dict={x: test_images, y: test_labels}))
+                      "validation loss : %s", sess.run(loss, feed_dict={x: test_images, y: test_labels}))
             if epoch % save_step == 0:
-                saver_path = saver.save(sess, "/home/user/JINGYU_KO/DEEPEST/WPI/VGG11/test_weight.ckpt-" + str(epoch))
+#                saver_path = saver.save(sess, "/home/user/JINGYU_KO/DEEPEST/WPI/VGG11/test_weight.ckpt-" + str(epoch))
                 print("Saved!")
         print("Train finished!")
 
