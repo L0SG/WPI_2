@@ -1,10 +1,11 @@
 import tensorflow as tf
 import numpy as np
 from vgg import vgg11
-import cifar100_utils
+import load_data
 
-(train_x, train_y), (test_x, test_y) = cifar100_utils.load_data()
-
+(train_x, train_y), (test_x, test_y) = load_data.load_data()
+train_x=train_x[0:5000]
+train_y=train_y[0:5000]
 # if trained the model before, load the weights
 weights = None
 
