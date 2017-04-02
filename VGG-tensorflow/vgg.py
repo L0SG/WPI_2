@@ -48,7 +48,7 @@ class vgg11:
         self.pool5 = self.max_pool(self.conv3_512_4, 'pool5')
 
         shape = int(np.prod(self.pool5.get_shape()[1:]))
-        self.fc4096_1 = self.fc_layer(self.pool1, 'fc4096_1', shape, 4096)
+        self.fc4096_1 = self.fc_layer(self.pool5, 'fc4096_1', shape, 4096)
         self.fc4096_2 = self.fc_layer(self.fc4096_1, 'fc4096_2', 4096, 4096)
         self.fc1000 = self.fc_layer(self.fc4096_2, 'fc1000', 4096, 1000)
 
