@@ -60,4 +60,5 @@ def load_data(name='cifar-100'):
         test_x = []
         test_y = []
         raise ValueError('%s is not a valid name of dataset' % (name))
+        
     return (train_x, train_y), (test_x, test_y)
