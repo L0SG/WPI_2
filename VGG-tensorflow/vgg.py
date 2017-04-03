@@ -1,4 +1,5 @@
 import tensorflow as tf
+import time
 import numpy as np
 
 class vgg11:
@@ -104,8 +105,59 @@ class vgg11:
         :param val_split: validation split (from 0 to 1)
         :param save_weights: save the weights if true
         """
-        # impelement here
+        #1 data split
+        data_size=images.shape[0]
+        train_data_size = (int)(data_size*(1-val_split))
+        test_data_size = (int)(data_size-data_size*(1-val_split))
+        train_images, test_images=np.split(images, [train_data_size])
+        train_labels, test_labels=np.split(labels, [train_data_size])
 
+        x = self.x
+        y = self.y
+        sess = self.sess
+
+        batch_size = 25
+        total_batch = (int)(train_data_size/batch_size)
+        display_step = 10
+        save_step = 100
+
+        # impelement here
+        pred = self.model
+        with tf.name_scope("loss"):
+            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=pred), name="loss")
+        optm = tf.train.GradientDescentOptimizer(1e-4).minimize(loss)
+        with tf.name_scope("accuracy"):
+            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="accuracy")
+        init = tf.global_variables_initializer()
+
+        saver = tf.train.Saver(max_to_keep=3)
+
+        writer = tf.summary.FileWriter("./tmp/1")
+        writer.add_graph(sess.graph)
+
+        print("Graph is ready")
+
+        sess.run(init)
+        for epoch in range(epochs):
+            start_time = time.time()
+            avg_cost = 0.
+            for i in range(total_batch):
+                batch_xs = train_images[i * batch_size:(i + 1) * batch_size]
+                batch_ys = train_labels[i * batch_size:(i + 1) * batch_size]
+                sess.run(optm, feed_dict={x: batch_xs, y: batch_ys})
+                avg_cost += sess.run(loss, feed_dict={x: batch_xs, y: batch_ys}) / total_batch
+
+                # Display logs per epoch step
+            if epoch % display_step == 0:
+                print("time per epoch : %s" % (time.time() - start_time),
+                      "epoch:", '%04d' % (epoch), "cost_train=", "{:.9f}".format(avg_cost))
+                print("validation accuracy : %s" , accuracy.eval(feed_dict={x: test_images, y: test_labels}),
+                      "validation loss : %s", sess.run(loss, feed_dict={x: test_images, y: test_labels}))
+            if epoch % save_step == 0:
+#                saver_path = saver.save(sess, "/home/user/JINGYU_KO/DEEPEST/WPI/VGG11/test_weight.ckpt-" + str(epoch))
+                print("Saved!")
+        print("Train finished!")
 
     def predict(self, images):
         """
