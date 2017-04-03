@@ -60,6 +60,6 @@ class vgg11:
         image_tensor = tf.placeholder(tf.float32,[1,32,32,3])
         for i in range(N):
             image_tensor = images[i,:,:,:]
-            predicted[i,:] = sess.run(self.train._out, feed_dict={ image_tensor : image_tensor})  
+            predicted[i,:] = sess.run(self.model, feed_dict={ image_tensor : image_tensor})  
             preds[i,1] = tf.arg_max(predicted[i,:],1) 
         return preds
