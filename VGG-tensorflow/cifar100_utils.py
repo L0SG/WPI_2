@@ -4,7 +4,7 @@ from keras.datasets import cifar100
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
-def load_data(name=None):
+def load_data(name='cifar-100'):
     """
     load dataset
     :return: (train_x, train_y), (test_x, test_y) in numpy format
@@ -28,7 +28,7 @@ def load_data(name=None):
         print("test_y.shape = " + str(test_y.shape))
 
     if name == 'cifar-100':
-        (train_x, train_y), (test_x, test_y) = cifar100.load_data(label_mode='fine')
+        (train_x, train_y), (test_x, test_y) = cifar100.load_data()
         train_x = train_x.astype('float32') / 255.
         test_x = test_x.astype('float32') / 255.
         # Convert class vectors to binary class matrices.
@@ -60,5 +60,5 @@ def load_data(name=None):
         test_x = []
         test_y = []
         raise ValueError('%s is not a valid name of dataset' % (name))
-
+        
     return (train_x, train_y), (test_x, test_y)
