@@ -166,5 +166,15 @@ class vgg11:
         :return: list with shape [None, 1], where None is sample size and 1 is class num integer
         """
         # implement here
-        preds = None
+        N=size(images,0)
+        
+        mod = self.model
+        
+        predicted = np.zeros((N,10),dtype=np.int)
+        preds = zeros((N,),dtype=np.int)
+        image_tensor = tf.placeholder(tf.float32,[1,32,32,3])
+        for i in range(N):
+            image_tensor = images[i,:,:,:]
+            predicted[i,:] = sess.run(self.model, feed_dict={ image_tensor : image_tensor})  
+            preds[i,1] = tf.arg_max(predicted[i,:],1) 
         return preds
