@@ -16,41 +16,13 @@ class vgg11:
         if weights is not None:
             self.weights = weights
             print ("VGG-11 pre-computed weights loaded")
-        else :
-            '''
-            self.weights = {
-                'wc1': tf.Variable(tf.truncated_normal([3, 3, 3, 64], stddev=0.1)),
-                'wc2': tf.Variable(tf.truncated_normal([3, 3, 64, 128], stddev=0.1)),
-                'wc3': tf.Variable(tf.truncated_normal([3, 3, 128, 256], stddev=0.1)),
-                'wc4': tf.Variable(tf.truncated_normal([3, 3, 256, 256], stddev=0.1)),
-                'wc5': tf.Variable(tf.truncated_normal([3, 3, 256, 512], stddev=0.1)),
-                'wc6': tf.Variable(tf.truncated_normal([3, 3, 512, 512], stddev=0.1)),
-                'wc7': tf.Variable(tf.truncated_normal([3, 3, 512, 512], stddev=0.1)),
-                'wc8': tf.Variable(tf.truncated_normal([3, 3, 512, 512], stddev=0.1)),
-                'wd1': tf.Variable(tf.truncated_normal([512, 512], stddev=0.1)),
-                'wd2': tf.Variable(tf.truncated_normal([512, 512], stddev=0.1)),
-                'wd3': tf.Variable(tf.truncated_normal([512, 200], stddev=0.1)),
-                'wd4': tf.Variable(tf.truncated_normal([200, 100], stddev=0.1)),
-                'bc1': tf.Variable(tf.random_normal([64], stddev=0.1)),
-                'bc2': tf.Variable(tf.random_normal([128], stddev=0.1)),
-                'bc3': tf.Variable(tf.random_normal([256], stddev=0.1)),
-                'bc4': tf.Variable(tf.random_normal([256], stddev=0.1)),
-                'bc5': tf.Variable(tf.random_normal([512], stddev=0.1)),
-                'bc6': tf.Variable(tf.random_normal([512], stddev=0.1)),
-                'bc7': tf.Variable(tf.random_normal([512], stddev=0.1)),
-                'bc8': tf.Variable(tf.random_normal([512], stddev=0.1)),
-                'bd1': tf.Variable(tf.random_normal([512], stddev=0.1)),
-                'bd2': tf.Variable(tf.random_normal([512], stddev=0.1)),
-                'bd3': tf.Variable(tf.random_normal([200], stddev=0.1)),
-                'bd4': tf.Variable(tf.random_normal([100], stddev=0.1))
-            }
-            '''
         if sess is not None:
             self.sess = sess
         # build the model
         self.model = self.build()
 
 
+    # anna
     def build(self):
         """
         build the model
@@ -58,61 +30,71 @@ class vgg11:
         :return: vgg11 model
         """
         # impelement here
-        self.x = tf.placeholder("float", [None, 32, 32, 3])
-        self.y = tf.placeholder("float", [None, 100])
+        self.conv3_64 = self.conv_layer(self.images, 'con3_64', 3, 64)
+        self.pool1 = self.max_pool(self.conv3_64, 'pool1')
 
-        # CONV LAYER 1
-        conv1=self.conv_layer(self.x, 3, 64, "conv1", isPooling=True)
-        # CONV LAYER 2
-        conv2=self.conv_layer(conv1, 64, 128, "conv2", isPooling=True)
-        # CONV LAYER 3 & 4
-        conv3=self.conv_layer(conv2, 128, 256, "conv3", isPooling=False)
-        conv4=self.conv_layer(conv3, 256, 256, "conv4", isPooling=True)
-        # CONV LAYER 5 & 6
-        conv5=self.conv_layer(conv4, 256, 512, "conv5", isPooling=False)
-        conv6=self.conv_layer(conv5, 512, 512, "conv6", isPooling=True)
-        # CONV LAYER 7 & 8
-        conv7=self.conv_layer(conv6, 512, 512, "conv7", isPooling=False)
-        conv8=self.conv_layer(conv7, 512, 512, "conv8", isPooling=True)
-        # VECTORIZE
-        print(conv8.get_shape())
-        flat = tf.contrib.layers.flatten(conv8)
-        print(flat.get_shape())
-        # FULLY CONNECTED LAYER 1
-        fc1=self.fc_layer(flat, 512, 512, "dense1", isDropout=True)
-        # FULLY CONNECTED LAYER 2
-        fc2=self.fc_layer(fc1, 512, 200, "dense2", isDropout=True)
-        # FULLY CONNECTED LAYER 3
-        fc3=self.fc_layer(fc2, 200, 100, "dense3", isDropout=False)
-        # RETURN
-        print ("CNN READY")
-        return fc3
+        self.conv3_128 = self.conv_layer(self.pool1, 'conv3_128', 64, 128)
+        self.pool2 = self.max_pool(self.conv3_128, 'pool2')
 
-    def conv_layer(self, input, channels_in, channels_out, name, isPooling=False):
-        with tf.name_scope(name):
-            w = tf.Variable(tf.zeros([3, 3, channels_in, channels_out]), dtype=tf.float32,  name="w")
-            b = tf.Variable(tf.zeros([channels_out]), dtype=tf.float32,  name="b")
-            conv = tf.nn.conv2d(input, w, strides=[1, 1, 1, 1], padding="SAME", name="conv") + b
-            activ = tf.nn.relu(conv, name="activ")
-            if(not isPooling) :
-                return activ
-            else :
-                pool = tf.nn.max_pool(activ, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME", name="pool")
-                return pool
+        self.conv3_256_1 = self.conv_layer(self.pool2, 'conv3_256_1', 128, 256)
+        self.conv3_256_2 = self.conv_layer(self.conv3_256_1, 'conv3_256_2', 256, 256)
+        self.pool3 = self.max_pool(self.conv3_256_2, 'pool3')
 
-    def fc_layer(self, input, channels_in, channels_out, name, isDropout=False):
-        with tf.name_scope(name):
-            w = tf.Variable(tf.zeros([channels_in, channels_out]), dtype=tf.float32, name="w")
-            b = tf.Variable(tf.zeros([channels_out]), dtype=tf.float32,  name="b")
-            print(input.get_shape())
-            print(w.get_shape())
-            activ = tf.nn.relu(tf.matmul(input, w) + b, name="activ")
-            if(not isDropout) :
-                return activ
-            else :
-                drop = tf.nn.dropout(activ, 0.5)
-                return drop
+        self.conv3_512_1 = self.conv_layer(self.pool3, 'conv3_512_1', 256, 512)
+        self.conv3_512_2 = self.conv_layer(self.conv3_512_1, 'conv3_512_2', 512, 512)
+        self.pool4 = self.max_pool(self.conv3_512_2, 'pool4')
 
+        self.conv3_512_3 = self.conv_layer(self.pool4, 'conv3_512_3', 512, 512)
+        self.conv3_512_4 = self.conv_layer(self.conv3_512_3, 'conv3_512_4', 512, 512)
+        self.pool5 = self.max_pool(self.conv3_512_4, 'pool5')
+
+        shape = int(np.prod(self.pool5.get_shape()[1:]))
+        self.fc4096_1 = self.fc_layer(self.pool5, 'fc4096_1', shape, 4096)
+        self.fc4096_2 = self.fc_layer(self.fc4096_1, 'fc4096_2', 4096, 4096)
+        self.fc1000 = self.fc_layer(self.fc4096_2, 'fc1000', 4096, 1000)
+
+        model = tf.nn.softmax(self.fc1000, name='softmax_out')
+
+        return model
+
+    def fc_bias(self, name, out_size):
+        return tf.Variable(tf.constant(1.0, shape=[out_size], dtype='float32'), name=name)
+
+    def fc_weight(self, name, in_size, out_size):
+        return tf.Variable(tf.truncated_normal([in_size, out_size], dtype='float32', stddev=1e-1), name=name)
+
+    def fc_layer(self, input, name, in_size, out_size):
+        with tf.variable_scope(name):
+            weight = self.fc_weight(name, in_size, out_size)
+
+            bias = self.fc_bias(name, out_size)
+
+            flatten = tf.reshape(input, [-1, in_size])
+
+            fc = tf.nn.bias_add(tf.matmul(flatten, weight), bias)
+
+            return tf.nn.relue(fc)
+
+    def max_pool(self, input, name):
+        return tf.nn.max_pool(input, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
+
+    def conv_channel(self, name, pre_num_ch, num_ch):
+        return tf.Variable(tf.truncated_normal([3, 3, pre_num_ch, num_ch], dtype='float32', stddev=1e-1), name=name)
+
+    def conv_bias(self, name, num_ch):
+        return tf.Variable(tf.constant(0.0, shape=[num_ch], dtype='float32'), name=name)
+
+    def conv_layer(self, input, name, pre_num_ch, num_ch):
+        with tf.variable_scope(name):
+            channel = self.conv_channel(name, pre_num_ch, num_ch)
+
+            conv = tf.nn.conv2d(input, channel, [1, 1, 1, 1],
+                                padding='SAME')  # VAlID = without padding, SAME = with zero padding
+
+            conv_biases = self.conv_bias(name, num_ch)
+
+            out = tf.nn.bias_add(conv, conv_biases)
+            return tf.nn.relu(out)
 
     def train(self, images, labels, epochs, val_split, save_weights):
         """
