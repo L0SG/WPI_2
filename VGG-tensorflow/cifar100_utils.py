@@ -4,7 +4,7 @@ from keras.datasets import cifar100
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
-def load_data(name=None):
+def load_data(name='cifar-100'):
     """
     load dataset
     :return: (train_x, train_y), (test_x, test_y) in numpy format
