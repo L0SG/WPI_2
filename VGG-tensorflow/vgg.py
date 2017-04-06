@@ -7,7 +7,7 @@ class vgg11:
     the standard vgg11 model
     should contain images, labels, weights and session
     """
-    def __init__(self, weights=None, sess=None):
+    def __init__(self, weights=None, sess=None, shape_x=None, shape_y=None):
         """
         initialize & build the model
         :param weights: if not none, load pre-computed weights
@@ -18,6 +18,10 @@ class vgg11:
             print ("VGG-11 pre-computed weights loaded")
         if sess is not None:
             self.sess = sess
+        if shape_x is not None:
+            self.shape_x = shape_x
+        if shape_y is not None:
+            self.shape_y = shape_y
         # build the model
         self.model = self.build()
 
@@ -30,33 +34,31 @@ class vgg11:
         :return: vgg11 model
         """
         # implement here
-        self.x = tf.placeholder(tf.float32, shape=(None,32,32,3), name='image')
-        self.y = tf.placeholder(tf.float32, shape=(None,100), name='label')
+        self.x = tf.placeholder(tf.float32, shape=(None,self.shape_x[0],self.shape_x[1],self.shape_x[2]), name='image')
+        self.y = tf.placeholder(tf.float32, shape=(None,self.shape_y[0]), name='label')
 
-        self.conv3_64 = self.conv_layer(self.x, 'con3_64', 3, 64)
-        self.pool1 = self.max_pool(self.conv3_64, 'pool1')
+        conv3_64 = self.conv_layer(self.x, 'con3_64', 3, 64)
+        pool1 = self.max_pool(conv3_64, 'pool1')
 
-        self.conv3_128 = self.conv_layer(self.pool1, 'conv3_128', 64, 128)
-        self.pool2 = self.max_pool(self.conv3_128, 'pool2')
+        conv3_128 = self.conv_layer(pool1, 'conv3_128', 64, 128)
+        pool2 = self.max_pool(conv3_128, 'pool2')
 
-        self.conv3_256_1 = self.conv_layer(self.pool2, 'conv3_256_1', 128, 256)
-        self.conv3_256_2 = self.conv_layer(self.conv3_256_1, 'conv3_256_2', 256, 256)
-        self.pool3 = self.max_pool(self.conv3_256_2, 'pool3')
+        conv3_256_1 = self.conv_layer(pool2, 'conv3_256_1', 128, 256)
+        conv3_256_2 = self.conv_layer(conv3_256_1, 'conv3_256_2', 256, 256)
+        pool3 = self.max_pool(conv3_256_2, 'pool3')
 
-        self.conv3_512_1 = self.conv_layer(self.pool3, 'conv3_512_1', 256, 512)
-        self.conv3_512_2 = self.conv_layer(self.conv3_512_1, 'conv3_512_2', 512, 512)
-        self.pool4 = self.max_pool(self.conv3_512_2, 'pool4')
+        conv3_512_1 = self.conv_layer(pool3, 'conv3_512_1', 256, 512)
+        conv3_512_2 = self.conv_layer(conv3_512_1, 'conv3_512_2', 512, 512)
+        pool4 = self.max_pool(conv3_512_2, 'pool4')
 
-        self.conv3_512_3 = self.conv_layer(self.pool4, 'conv3_512_3', 512, 512)
-        self.conv3_512_4 = self.conv_layer(self.conv3_512_3, 'conv3_512_4', 512, 512)
-        self.pool5 = self.max_pool(self.conv3_512_4, 'pool5')
+        conv3_512_3 = self.conv_layer(pool4, 'conv3_512_3', 512, 512)
+        conv3_512_4 = self.conv_layer(conv3_512_3, 'conv3_512_4', 512, 512)
+        pool5 = self.max_pool(conv3_512_4, 'pool5')
 
-        shape = int(np.prod(self.pool5.get_shape()[1:]))
-        self.fc4096_1 = self.fc_layer(self.pool5, 'fc4096_1', shape, 4096)
-        self.fc4096_2 = self.fc_layer(self.fc4096_1, 'fc4096_2', 4096, 4096)
-        self.fc100 = self.fc_layer(self.fc4096_2, 'fc100', 4096, 100)
-
-        model = tf.nn.softmax(self.fc100, name='softmax_out')
+        shape = int(np.prod(pool5.get_shape()[1:]))
+        fc4096_1 = self.fc_layer(pool5, 'fc4096_1', shape, 4096)
+        fc4096_2 = self.fc_layer(fc4096_1, 'fc4096_2', 4096, 4096)
+        model = self.fc_layer(fc4096_2, 'fc100', 4096, 100)
 
         return model
 
@@ -91,8 +93,7 @@ class vgg11:
         with tf.variable_scope(name):
             channel = self.conv_channel(name, pre_num_ch, num_ch)
 
-            conv = tf.nn.conv2d(input, channel, [1, 1, 1, 1],
-                                padding='SAME')  # VAlID = without padding, SAME = with zero padding
+            conv = tf.nn.conv2d(input, channel, [1, 1, 1, 1], padding='SAME')
 
             conv_biases = self.conv_bias(name, num_ch)
 
@@ -129,7 +130,7 @@ class vgg11:
         # impelement here
         pred = self.model
         with tf.name_scope("loss"):
-            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=pred), name="loss")
+            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=pred), name='loss')
             train_loss_summary = tf.summary.scalar('train_loss', loss)
             valid_loss_summary = tf.summary.scalar('valid_loss', loss)
         optm = tf.train.GradientDescentOptimizer(1e-4).minimize(loss)
@@ -142,7 +143,7 @@ class vgg11:
 
         saver = tf.train.Saver(max_to_keep=3)
 
-        writer = tf.summary.FileWriter("./tmp/1")
+        writer = tf.summary.FileWriter("./tmp/")
         writer.add_graph(sess.graph)
 
         print("Graph is ready")
@@ -162,12 +163,14 @@ class vgg11:
             if epoch % display_step == 0:
                 valid_loss_acc = sess.run(valid_merged, valid_feed)
                 writer.add_summary(valid_loss_acc, (epoch * total_batch))
-                print("\r\b\rtime per epoch : %.2f" % (time.time() - start_time),
-                      "epoch:", '%d' % (epoch), "cost_train=", "{:.9f}".format(avg_cost),
-                      "\nvalidation accuracy : %s" , accuracy.eval(valid_feed),
-                      "validation loss : %s", loss.eval(valid_feed), end='')
+                print('epoch: %d' % epoch,
+                      'time per epoch : %.2f,' % (time.time() - start_time),
+                      'train_loss: %.9f,' % loss.eval(valid_feed),
+                      'valid_acc: %.5f,' % accuracy.eval(valid_feed),
+                      'validation loss : %.5f' % loss.eval(valid_feed), end='')
             if epoch % save_step == 0:
-                saver.save(sess, "./test_weight.ckpt-" + str(epoch), (epoch * total_batch))
+                pass
+                # saver.save(sess, "./weights/train_weight.ckpt-" + str(epoch), (epoch * total_batch))
         print("\nTrain finished!")
 
     def predict(self, images):
