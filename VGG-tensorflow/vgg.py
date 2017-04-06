@@ -7,7 +7,7 @@ class vgg11:
     the standard vgg11 model
     should contain images, labels, weights and session
     """
-    def __init__(self, weights=None, sess=None):
+    def __init__(self, weights=None, sess=None, shape=None):
         """
         initialize & build the model
         :param weights: if not none, load pre-computed weights
@@ -19,17 +19,18 @@ class vgg11:
         if sess is not None:
             self.sess = sess
         # build the model
-
+        self.shape = shape
+        self.model = self.build()
 
     # anna
-    def build(self, images):
+    def build(self):
         """
         build the model
         the model should output softmax class prediction tensor
         :return: vgg11 model
         """
         # impelement here
-        self.conv3_64 = self.conv_layer(images, 'con3_64', 3, 64)
+        self.conv3_64 = self.conv_layer(self.shape, 'con3_64', 3, 64)
         self.pool1 = self.max_pool(self.conv3_64, 'pool1')
 
         self.conv3_128 = self.conv_layer(self.pool1, 'conv3_128', 64, 128)
@@ -105,7 +106,7 @@ class vgg11:
         :param save_weights: save the weights if true
         """
 
-        self.model = self.build(images)
+
 
         #1 data split
         data_size=images.shape[0]
