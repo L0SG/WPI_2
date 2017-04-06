@@ -14,7 +14,7 @@ with tf.Session() as sess:
     vgg_model = vgg11(weights=None, sess=sess)
     # train the model
     vgg_model.train(images=train_x, labels=train_y,
-                    epochs=100, val_split=0.1, save_weights=True)
+                    epochs=10, val_split=0.1, save_weights=True)
     # predict labels for the test images
     preds = vgg_model.predict(images=None)
 
