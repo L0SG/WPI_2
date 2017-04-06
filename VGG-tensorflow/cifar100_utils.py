@@ -15,7 +15,7 @@ def load_data(name='cifar-100'):
         name = input('Type the name of data set : ')
 
 
-    if name == 'cifar-10':
+    elif name == 'cifar-10':
         (train_x, train_y), (test_x, test_y) = cifar10.load_data()
         train_x = train_x.astype('float32') / 255.
         test_x = test_x.astype('float32') / 255.
@@ -27,7 +27,7 @@ def load_data(name='cifar-100'):
         print("test_x.shape = " + str(test_x.shape))
         print("test_y.shape = " + str(test_y.shape))
 
-    if name == 'cifar-100':
+    elif name == 'cifar-100':
         (train_x, train_y), (test_x, test_y) = cifar100.load_data()
         train_x = train_x.astype('float32') / 255.
         test_x = test_x.astype('float32') / 255.
