@@ -19,18 +19,17 @@ class vgg11:
         if sess is not None:
             self.sess = sess
         # build the model
-        self.model = self.build()
 
 
     # anna
-    def build(self):
+    def build(self, images):
         """
         build the model
         the model should output softmax class prediction tensor
         :return: vgg11 model
         """
         # impelement here
-        self.conv3_64 = self.conv_layer(self.images, 'con3_64', 3, 64)
+        self.conv3_64 = self.conv_layer(images, 'con3_64', 3, 64)
         self.pool1 = self.max_pool(self.conv3_64, 'pool1')
 
         self.conv3_128 = self.conv_layer(self.pool1, 'conv3_128', 64, 128)
@@ -73,7 +72,7 @@ class vgg11:
 
             fc = tf.nn.bias_add(tf.matmul(flatten, weight), bias)
 
-            return tf.nn.relue(fc)
+            return tf.nn.relu(fc)
 
     def max_pool(self, input, name):
         return tf.nn.max_pool(input, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
@@ -105,6 +104,9 @@ class vgg11:
         :param val_split: validation split (from 0 to 1)
         :param save_weights: save the weights if true
         """
+
+        self.model = self.build(images)
+
         #1 data split
         data_size=images.shape[0]
         train_data_size = (int)(data_size*(1-val_split))
