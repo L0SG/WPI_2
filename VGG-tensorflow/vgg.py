@@ -19,18 +19,30 @@ class vgg11:
         if sess is not None:
             self.sess = sess
         # build the model
-        self.model = self.build()
 
+    def build_simple(self, images):
+        self.conv3_32 = self.conv_layer(images,'con3_32',3,32)
+        self.pool1 = self.max_pool(self.conv3_32, 'pool1')
 
-    # anna
-    def build(self):
+        self.conv3_64 = self.condv_layer(self.pool1, 'conv3_64', 32, 64)
+        self.pool2 = self.max_pool(self.conv3_64, 'pool2')
+        shape = int(np.prod(self.pool2.get_shape()[1:]))
+
+        self.fc1024 = self.fc_layer(self.pool2, 'fc1024', shape, 1024)
+        self.fc100 = self.fc_layer(self.fc1024, 'fc100', 1024, 100)
+
+        model = self.fc100
+
+        return model
+
+    def build(self, images):
         """
         build the model
         the model should output softmax class prediction tensor
         :return: vgg11 model
         """
-        # impelement here
-        self.conv3_64 = self.conv_layer(self.images, 'con3_64', 3, 64)
+        # implement here
+        self.conv3_64 = self.conv_layer(images, 'con3_64', 3, 64)
         self.pool1 = self.max_pool(self.conv3_64, 'pool1')
 
         self.conv3_128 = self.conv_layer(self.pool1, 'conv3_128', 64, 128)
@@ -51,9 +63,9 @@ class vgg11:
         shape = int(np.prod(self.pool5.get_shape()[1:]))
         self.fc4096_1 = self.fc_layer(self.pool5, 'fc4096_1', shape, 4096)
         self.fc4096_2 = self.fc_layer(self.fc4096_1, 'fc4096_2', 4096, 4096)
-        self.fc1000 = self.fc_layer(self.fc4096_2, 'fc1000', 4096, 1000)
+        self.fc100 = self.fc_layer(self.fc4096_2, 'fc1000', 4096, 100)
 
-        model = tf.nn.softmax(self.fc1000, name='softmax_out')
+        model = self.fc100
 
         return model
 
@@ -64,7 +76,7 @@ class vgg11:
         return tf.Variable(tf.truncated_normal([in_size, out_size], dtype='float32', stddev=1e-1), name=name)
 
     def fc_layer(self, input, name, in_size, out_size):
-        with tf.variable_scope(name):
+        with tf.name_scope(name):
             weight = self.fc_weight(name, in_size, out_size)
 
             bias = self.fc_bias(name, out_size)
@@ -73,7 +85,7 @@ class vgg11:
 
             fc = tf.nn.bias_add(tf.matmul(flatten, weight), bias)
 
-            return tf.nn.relue(fc)
+            return tf.nn.relu(fc)
 
     def max_pool(self, input, name):
         return tf.nn.max_pool(input, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
@@ -85,11 +97,10 @@ class vgg11:
         return tf.Variable(tf.constant(0.0, shape=[num_ch], dtype='float32'), name=name)
 
     def conv_layer(self, input, name, pre_num_ch, num_ch):
-        with tf.variable_scope(name):
+        with tf.name_scope(name):
             channel = self.conv_channel(name, pre_num_ch, num_ch)
 
-            conv = tf.nn.conv2d(input, channel, [1, 1, 1, 1],
-                                padding='SAME')  # VAlID = without padding, SAME = with zero padding
+            conv = tf.nn.conv2d(input, channel, [1, 1, 1, 1], padding='SAME')  # VAlID = without padding, SAME = with zero padding
 
             conv_biases = self.conv_bias(name, num_ch)
 
@@ -105,60 +116,61 @@ class vgg11:
         :param val_split: validation split (from 0 to 1)
         :param save_weights: save the weights if true
         """
-        #1 data split
-        data_size=images.shape[0]
-        train_data_size = (int)(data_size*(1-val_split))
-        test_data_size = (int)(data_size-data_size*(1-val_split))
-        train_images, test_images=np.split(images, [train_data_size])
-        train_labels, test_labels=np.split(labels, [train_data_size])
 
-        x = self.x
-        y = self.y
-        sess = self.sess
+        # implement here
+        x = tf.placeholder("float", [None, 32, 32, 3])
+        y = tf.placeholder("float", [None, 100])
+
+        data_size = images.shape[0]
+        train_data_size = (int)(data_size*(1-val_split))
+        train_images, val_images = np.split(images, [train_data_size])
+        train_labels, val_labels = np.split(labels, [train_data_size])
 
         batch_size = 25
-        total_batch = (int)(train_data_size/batch_size)
-        display_step = 10
-        save_step = 100
+        total_batch = train_data_size/batch_size
+        display_step = 1
+        #save_step = 100
 
-        # impelement here
-        pred = self.model
         with tf.name_scope("loss"):
-            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=pred), name="loss")
-        optm = tf.train.GradientDescentOptimizer(1e-4).minimize(loss)
+            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=self.build_simple(x)), name="loss")
+        optm = tf.train.AdamOptimizer(1e-4).minimize(loss)
         with tf.name_scope("accuracy"):
-            correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+            correct_prediction = tf.equal(tf.argmax(self.build_simple(x), 1), tf.argmax(y, 1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="accuracy")
         init = tf.global_variables_initializer()
 
-        saver = tf.train.Saver(max_to_keep=3)
+        saver = tf.train.Saver()
 
         writer = tf.summary.FileWriter("./tmp/1")
-        writer.add_graph(sess.graph)
+        writer.add_graph(self.sess.graph)
 
         print("Graph is ready")
 
-        sess.run(init)
+        self.sess.run(init)
         for epoch in range(epochs):
             start_time = time.time()
             avg_cost = 0.
+            # batch randomization should be added.
             for i in range(total_batch):
                 batch_xs = train_images[i * batch_size:(i + 1) * batch_size]
                 batch_ys = train_labels[i * batch_size:(i + 1) * batch_size]
-                sess.run(optm, feed_dict={x: batch_xs, y: batch_ys})
-                avg_cost += sess.run(loss, feed_dict={x: batch_xs, y: batch_ys}) / total_batch
+                self.sess.run(optm, feed_dict={x: batch_xs, y: batch_ys})
+                avg_cost += self.sess.run(loss, feed_dict={x: batch_xs, y: batch_ys}) / total_batch
 
                 # Display logs per epoch step
             if epoch % display_step == 0:
-                print("time per epoch : %s" % (time.time() - start_time),
-                      "epoch:", '%04d' % (epoch), "cost_train=", "{:.9f}".format(avg_cost))
-                print("validation accuracy : %s" , accuracy.eval(feed_dict={x: test_images, y: test_labels}),
-                      "validation loss : %s", sess.run(loss, feed_dict={x: test_images, y: test_labels}))
-            if epoch % save_step == 0:
-#                saver_path = saver.save(sess, "/home/user/JINGYU_KO/DEEPEST/WPI/VGG11/test_weight.ckpt-" + str(epoch))
-                print("Saved!")
-        print("Train finished!")
+                print("epoch : %d, loss : %.5f" %(epoch,avg_cost))
+                print("validation accuracy : %.5f, validation loss : %.5f"
+                      %(self.sess.run(accuracy, feed_dict={x: val_images, y: val_labels}), self.sess.run(loss, feed_dict={x: val_images, y: val_labels})))
+            print("Train finished!")
 
+
+#            if epoch % save_step == 0:
+#                saver_path = saver.save(self.sess, "test_weight.ckpt-" + str(epoch))
+#                print("Saved!")
+
+
+'''
     def predict(self, images):
         """
         predict the class given the images
@@ -178,3 +190,4 @@ class vgg11:
             predicted[i,:] = sess.run(self.model, feed_dict={ image_tensor : image_tensor})  
             preds[i,1] = tf.arg_max(predicted[i,:],1) 
         return preds
+'''
