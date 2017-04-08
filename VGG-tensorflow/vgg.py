@@ -43,25 +43,26 @@ class vgg11:
         conv3_128 = self.conv_layer(pool1, 'conv3_128', 64, 128)
         pool2 = self.max_pool(conv3_128, 'pool2')
 
-        #conv3_256_1 = self.conv_layer(pool2, 'conv3_256_1', 128, 256)
-        #conv3_256_2 = self.conv_layer(conv3_256_1, 'conv3_256_2', 256, 256)
-        #pool3 = self.max_pool(conv3_256_2, 'pool3')
+        conv3_256_1 = self.conv_layer(pool2, 'conv3_256_1', 128, 256)
+        conv3_256_2 = self.conv_layer(conv3_256_1, 'conv3_256_2', 256, 256)
+        pool3 = self.max_pool(conv3_256_2, 'pool3')
 
-        #conv3_512_1 = self.conv_layer(pool3, 'conv3_512_1', 256, 512)
-        #conv3_512_2 = self.conv_layer(conv3_512_1, 'conv3_512_2', 512, 512)
-        #pool4 = self.max_pool(conv3_512_2, 'pool4')
+        conv3_512_1 = self.conv_layer(pool3, 'conv3_512_1', 256, 512)
+        conv3_512_2 = self.conv_layer(conv3_512_1, 'conv3_512_2', 512, 512)
+        pool4 = self.max_pool(conv3_512_2, 'pool4')
 
-        #conv3_512_3 = self.conv_layer(pool4, 'conv3_512_3', 512, 512)
-        #conv3_512_4 = self.conv_layer(conv3_512_3, 'conv3_512_4', 512, 512)
-        #pool5 = self.max_pool(conv3_512_4, 'pool5')
+        conv3_512_3 = self.conv_layer(pool4, 'conv3_512_3', 512, 512)
+        conv3_512_4 = self.conv_layer(conv3_512_3, 'conv3_512_4', 512, 512)
+        pool5 = self.max_pool(conv3_512_4, 'pool5')
 
-        shape = int(np.prod(pool2.get_shape()[1:]))
-        fc4096_1 = self.fc_layer(pool2, 'fc4096_1', shape, 300)
         #shape = int(np.prod(pool1.get_shape()[1:]))
-        #fc4096_1 = self.fc_layer(pool1, 'fc4096_1', shape, 300)
-        #fc4096_2 = self.fc_layer(fc4096_1, 'fc4096_2', 4096, 4096)
-        model = self.fc_layer(fc4096_1, 'fc100', 300, 100)
-        return model
+        #fc_300 = self.fc_layer(pool1, 'fc4096_1', shape, 300)
+        shape = int(np.prod(pool5.get_shape()[1:]))
+        fc4096_1 = self.fc_layer(pool5, 'fc4096_1', shape, 4096)
+        fc4096_2 = self.fc_layer(fc4096_1, 'fc4096_2', 4096, 4096)
+        output_100 = self.fc_layer(fc4096_2, 'fc100', 4096, 100)
+        #output_100 = self.fc_layer(fc_300, 'fc100', 300, 10)
+        return output_100
 
     def fc_bias(self, name, out_size):
         return tf.Variable(tf.constant(1.0, shape=[out_size], dtype=tf.float32), name=name)
@@ -176,7 +177,7 @@ class vgg11:
                 train_feed = {x: batch_xs, y: batch_ys}
 
                 _, train_loss_summ = sess.run([opt, train_loss_summary], train_feed)
-                #print(self.model.eval(train_feed)[0])
+                # print('model output:',self.model.eval(train_feed)[0]) # view model output
                 writer.add_summary(train_loss_summ, (epoch * total_batch + i))
 
                 # Display logs per epoch step
