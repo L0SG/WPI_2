@@ -1,0 +1,11 @@
+# optimizer parameters
+decay : 0.95
+num_decay_steps : 150
+init_learning_rate : 0.0001 # if minibatch=True, we recommend 0.005 as initial learning rate. else, 0.03
+
+# training parameters
+epochs : 20
+val_split : 0.01 # the ratio of validation set
+batch_size : 200
+display_step : 10 # display every N step
+save_step : 100
